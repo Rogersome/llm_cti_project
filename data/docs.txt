@@ -1,0 +1,11 @@
+MITRE ATT&CK T1059: Command and Scripting Interpreter
+
+This technique involves adversaries using command-line interfaces to execute arbitrary commands.
+
+Indicators of Compromise:
+- Suspicious PowerShell execution
+- Encoded commands
+
+Defense:
+- Monitor command-line arguments
+- Restrict scripting environments
