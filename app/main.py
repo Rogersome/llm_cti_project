@@ -1,57 +1,55 @@
-from src.rag import SimpleRAG
-from anthropic import Anthropic
+import logging
+from contextlib import asynccontextmanager
 
-client = Anthropic()
+from anthropic import APIError, APITimeoutError
+from fastapi import FastAPI, HTTPException
 
-with open("data/docs.txt", "r", encoding="utf-8") as f:
-    docs = f.read().split("\n\n")
+from app.config import settings
+from app.schemas import AskRequest, AskResponse, HealthResponse
+from app.service import RagService
 
-rag = SimpleRAG(docs)
+logging.basicConfig(
+    level=settings.log_level,
+    format="%(asctime)s %(levelname)s %(name)s | %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-def ask(question):
-    q = question.strip().lower()
-
-    if len(q) < 5 or q in ["?", "???", "hello", "hi", "test"]:
-        return "The input is unclear or not cybersecurity-related. Please provide a more specific description of the scenario."
-    keywords = ["attack", "malware", "command", "script", "exploit", "security"]
-    
-    if not any(k in q for k in keywords):
-        return "The input does not appear to be related to cybersecurity. Please provide more context."
-    
-    context = rag.retrieve(question)
-
-    prompt = f"""
-You are a cybersecurity assistant.
-
-Context:
-{context}
-
-Question:
-{question}
-
-Answer with:
-- Summary
-- Threat mapping
-- Defense
-"""
-
-    response = client.messages.create(
-        model="claude-haiku-4-5",
-        max_tokens=500,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    answer = response.content[0].text
-
-    sources = "\n\n---\nSources:\n"
-    for i, doc in enumerate(context):
-        sources += f"[{i+1}] {doc[:150]}...\n"
-
-    return answer + sources
+state: dict[str, RagService] = {}
 
 
-if __name__ == "__main__":
-    q = "What is command execution attack?"
-    print(ask(q))
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 啟動時建立一次索引，之後每個請求重複使用
+    state["service"] = RagService()
+    yield
+    state.clear()
+
+
+app = FastAPI(
+    title="Cybersecurity RAG API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+
+@app.get("/health", response_model=HealthResponse)
+def health() -> HealthResponse:
+    service = state.get("service")
+    if service is None:
+        raise HTTPException(status_code=503, detail="Service not ready")
+    return HealthResponse(status="ok", documents_loaded=service.document_count)
+
+
+@app.post("/ask", response_model=AskResponse)
+def ask(request: AskRequest) -> AskResponse:
+    service = state.get("service")
+    if service is None:
+        raise HTTPException(status_code=503, detail="Service not ready")
+    try:
+        return service.ask(request.question)
+    except APITimeoutError:
+        logger.exception("Upstream timeout")
+        raise HTTPException(status_code=504, detail="LLM request timed out")
+    except APIError:
+        logger.exception("Upstream API error")
+        raise HTTPException(status_code=502, detail="LLM service unavailable")

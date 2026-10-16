@@ -1,0 +1,12 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.git/
+.github/
+.env
+.pytest_cache/
+tests/
+README.md
+*.md
+app/_old_main.py

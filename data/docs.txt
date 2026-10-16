@@ -1,11 +1,93 @@
 MITRE ATT&CK T1059: Command and Scripting Interpreter
 
-This technique involves adversaries using command-line interfaces to execute arbitrary commands.
+Adversaries abuse command and script interpreters to execute arbitrary commands, scripts, or binaries. Common interpreters include PowerShell, Windows Command Shell, Bash, and Python.
 
 Indicators of Compromise:
-- Suspicious PowerShell execution
-- Encoded commands
+- Suspicious PowerShell execution with encoded commands
+- Unusual parent-child process relationships, such as Office applications spawning cmd.exe
+- Scripts executed from temporary or user-writable directories
 
 Defense:
-- Monitor command-line arguments
-- Restrict scripting environments
+- Enable PowerShell script block logging and command-line argument auditing
+- Restrict scripting environments through application control policies
+- Alert on encoded or obfuscated command-line parameters
+
+---
+
+MITRE ATT&CK T1566: Phishing
+
+Adversaries send phishing messages to gain access to victim systems. Messages may contain malicious attachments or links, and are often tailored to the target organization.
+
+Indicators of Compromise:
+- Emails from newly registered or look-alike domains
+- Attachments with macro-enabled document formats
+- Credential prompts hosted on domains unrelated to the organization
+
+Defense:
+- Deploy email filtering and attachment sandboxing
+- Enforce multi-factor authentication to limit credential reuse
+- Run regular user awareness training and phishing simulations
+
+---
+
+MITRE ATT&CK T1190: Exploit Public-Facing Application
+
+Adversaries exploit weaknesses in internet-facing hosts or applications to gain initial access, often targeting unpatched software or misconfigurations.
+
+Indicators of Compromise:
+- Unexpected outbound connections from web servers
+- Web server processes spawning shell processes
+- Spikes in malformed requests against known vulnerable endpoints
+
+Defense:
+- Apply security patches promptly and maintain an asset inventory
+- Place a web application firewall in front of exposed services
+- Segment internet-facing systems from internal networks
+
+---
+
+MITRE ATT&CK T1486: Data Encrypted for Impact
+
+Adversaries encrypt data on target systems to interrupt availability, commonly seen in ransomware operations. Encryption is often preceded by data exfiltration.
+
+Indicators of Compromise:
+- Mass file modification events in a short time window
+- Deletion of volume shadow copies and backup catalogs
+- Ransom notes written across multiple directories
+
+Defense:
+- Maintain offline, tested backups with restoration drills
+- Restrict administrative privileges and monitor backup deletion commands
+- Deploy endpoint detection with behavioural ransomware rules
+
+---
+
+MITRE ATT&CK T1078: Valid Accounts
+
+Adversaries obtain and abuse credentials of existing accounts to gain access, evade detection, and maintain persistence.
+
+Indicators of Compromise:
+- Logins from unusual geographic locations or at unusual hours
+- Impossible travel between consecutive authentication events
+- Dormant accounts suddenly becoming active
+
+Defense:
+- Enforce multi-factor authentication across all remote access
+- Review and disable unused accounts regularly
+- Monitor authentication logs for anomalous access patterns
+
+---
+
+MITRE ATT&CK T1046: Network Service Discovery
+
+Adversaries scan internal networks to identify running services and potential targets for lateral movement.
+
+Indicators of Compromise:
+- Sequential connection attempts across multiple ports or hosts
+- Scanning tools executed from workstations rather than admin hosts
+- Large volumes of failed connection attempts in short intervals
+
+Defense:
+- Apply network segmentation to limit lateral visibility
+- Monitor for port-scanning behaviour with network detection rules
+- Restrict which hosts may initiate internal administrative connections
